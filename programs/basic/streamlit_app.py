@@ -98,84 +98,101 @@ def main():
 
     st.title("Mixed Style Image Generator")
     
-    # Add text areas for positive and negative prompts at the top
-    user_prompt = st.text_area(
-        "Enter what you want to draw",
-        placeholder="e.g., a beautiful sunset over mountains",
-        height=100
-    )
-    
-    negative_prompt = st.text_area(
-        "Enter what you do not want to see",
-        placeholder="e.g., extra limbs, bad eyes, bad anatomy, cropped, cross-eyed, worst quality, low quality",
-        height=100
-    )
-    
-    # Add seed input with random default value
-    default_seed = random.randint(1, 1000000)
-    seed = st.number_input("Enter seed value (or keep random)", value=default_seed)
-    
-    # Load styles
-    styles_dict = load_styles()
-    
-    # Create multiselect for main styles
-    selected_styles = st.multiselect(
-        "Select Styles",
-        options=list(styles_dict.keys())
-    )
-    
-    # Dictionary to store selected substyles for each style
-    selected_substyles = {}
-    
-    # Create multiselect for substyles for each selected style
-    for style in selected_styles:
-        substyle_options = [sub['name'] for sub in styles_dict[style]]
-        selected_substyles[style] = st.multiselect(
-            f"Select substyles for {style}",
-            options=substyle_options
+    # Move all inputs to sidebar
+    with st.sidebar:
+        # Add text areas for positive and negative prompts at the top
+        user_prompt = st.text_area(
+            "Enter what you want to draw",
+            placeholder="e.g., a beautiful sunset over mountains",
+            height=100
         )
-    
-    if st.button("Generate Prompts"):
-        positive_prompts = []
-        negative_prompts = []
         
-        # Add user prompts first if they exist
-        if user_prompt:
-            positive_prompts.append(user_prompt)
-        if negative_prompt:
-            negative_prompts.append(negative_prompt)
+        negative_prompt = st.text_area(
+            "Enter what you do not want to see",
+            placeholder="e.g., extra limbs, bad eyes, bad anatomy, cropped, cross-eyed, worst quality, low quality",
+            height=100
+        )
         
-        # Collect prompts for all selected substyles
+        # Add seed input with random default value
+        if 'current_seed' not in st.session_state:
+            st.session_state.current_seed = random.randint(1, 1000000)
+        
+        seed_input = st.text_input("Enter seed value (or keep current)", 
+                                 value=str(st.session_state.current_seed))
+        
+        if st.button("Randomize Seed"):
+            st.session_state.current_seed = random.randint(1, 1000000)
+            st.rerun()
+            
+        try:
+            seed = int(seed_input)
+        except ValueError:
+            st.error("Please enter a valid number for seed")
+            seed = st.session_state.current_seed
+        
+        # Load styles
+        styles_dict = load_styles()
+        
+        # Create multiselect for main styles
+        selected_styles = st.multiselect(
+            "Select Styles",
+            options=list(styles_dict.keys())
+        )
+        
+        # Dictionary to store selected substyles for each style
+        selected_substyles = {}
+        
+        # Create multiselect for substyles for each selected style
         for style in selected_styles:
-            for substyle_name in selected_substyles[style]:
-                # Find the substyle data
-                substyle_data = next(
-                    sub for sub in styles_dict[style] 
-                    if sub['name'] == substyle_name
-                )
-                
-                if substyle_data['prompt']:
-                    positive_prompts.append(substyle_data['prompt'])
-                if substyle_data['negative_prompt']:
-                    negative_prompts.append(substyle_data['negative_prompt'])
+            substyle_options = [sub['name'] for sub in styles_dict[style]]
+            selected_substyles[style] = st.multiselect(
+                f"Select substyles for {style}",
+                options=substyle_options
+            )
         
-        # Combine prompts
-        combined_positive = ", ".join(positive_prompts)
-        combined_negative = ", ".join(negative_prompts)
-        
-        # Display results
-        st.text_area("Positive Prompt", combined_positive, height=150)
-        st.text_area("Negative Prompt", combined_negative, height=150)
-        
-        # Add Generate Image button if prompts are not empty
-        if combined_positive:
-            st.button("Generate Image", key="generate_image", on_click=on_generate_click)
+        if st.button("Generate Prompts"):
+            positive_prompts = []
+            negative_prompts = []
+            
+            # Add user prompts first if they exist
+            if user_prompt:
+                positive_prompts.append(user_prompt)
+            if negative_prompt:
+                negative_prompts.append(negative_prompt)
+            
+            # Collect prompts for all selected substyles
+            for style in selected_styles:
+                for substyle_name in selected_substyles[style]:
+                    # Find the substyle data
+                    substyle_data = next(
+                        sub for sub in styles_dict[style] 
+                        if sub['name'] == substyle_name
+                    )
+                    
+                    if substyle_data['prompt']:
+                        positive_prompts.append(substyle_data['prompt'])
+                    if substyle_data['negative_prompt']:
+                        negative_prompts.append(substyle_data['negative_prompt'])
+            
+            # Combine prompts
+            combined_positive = ", ".join(positive_prompts)
+            combined_negative = ", ".join(negative_prompts)
+            
+            # Display results
+            st.text_area("Positive Prompt", combined_positive, height=150)
+            st.text_area("Negative Prompt", combined_negative, height=150)
+            
+            # Add Generate Image button if prompts are not empty
+            if combined_positive:
+                st.button("Generate Image", key="generate_image", on_click=on_generate_click)
 
-    # Handle image generation in a separate block
+    # Handle image generation in the main window
     if st.session_state.generate_clicked:
         try:
-            print("Processing workflow...")
-            st.write("Processing workflow...")
+            # Create a placeholder for status messages
+            status_placeholder = st.empty()
+            
+            status_placeholder.write("Processing workflow...")
             workflow = process_workflow('workflow2.json', 
                                      st.session_state.combined_positive, 
                                      st.session_state.combined_negative, 
@@ -184,27 +201,27 @@ def main():
             # Use the stored unique ID
             workflow["9"]["inputs"]["filename_prefix"] = st.session_state.unique_id
             
-            st.write("Queueing workflow...")
+            status_placeholder.write("Queueing workflow...")
             status_code = queue_workflow(workflow)
             
             if status_code == 200:
-                st.success("Image generation started successfully!")
+                status_placeholder.success("Image generation started successfully!")
                 
                 # Wait for the image file
-                st.write("Waiting for image generation to complete...")
+                status_placeholder.write("Waiting for image generation to complete...")
                 image_path = wait_for_image(st.session_state.unique_id)
                 
                 if image_path:
-                    st.write("Image generated successfully!")
+                    status_placeholder.empty()  # Clear the status messages
                     # Display the image
                     st.image(image_path, caption="Generated Image")
                 else:
-                    st.error("Timeout waiting for image generation")
+                    status_placeholder.error("Timeout waiting for image generation")
             else:
-                st.error(f"Failed to queue image generation. Status code: {status_code}")
+                status_placeholder.error(f"Failed to queue image generation. Status code: {status_code}")
         except Exception as e:
             print(f"Error: {str(e)}")
-            st.error(f"Error generating image: {str(e)}")
+            status_placeholder.error(f"Error generating image: {str(e)}")
         finally:
             st.session_state.generate_clicked = False
 
