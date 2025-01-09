@@ -96,7 +96,17 @@ def main():
         st.session_state.seed = seed
         st.session_state.unique_id = "output_" + str(uuid.uuid4())[:8]
 
-    st.title("Mixed Style Image Generator")
+    # Custom CSS for centered, less prominent title
+    st.markdown("""
+        <h3 style='
+            text-align: center;
+            color: #666666;
+            font-weight: 300;
+            margin-bottom: 30px;
+        '>
+            Mixed Style Image Generator
+        </h3>
+    """, unsafe_allow_html=True)
     
     # Move all inputs to sidebar
     with st.sidebar:
@@ -213,8 +223,23 @@ def main():
                 
                 if image_path:
                     status_placeholder.empty()  # Clear the status messages
-                    # Display the image
-                    st.image(image_path, caption="Generated Image")
+                    # Display the image in a frame
+                    st.markdown(
+                        f"""
+                        <div style="
+                            padding: 20px;
+                            border: 2px solid #cccccc;
+                            border-radius: 10px;
+                            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                            background-color: white;
+                            margin: 10px 0;
+                        ">
+                            <img src="data:image/png;base64,{image_to_base64(image_path)}" 
+                                 style="width: 100%; height: auto; display: block;">
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
                 else:
                     status_placeholder.error("Timeout waiting for image generation")
             else:
@@ -224,6 +249,11 @@ def main():
             status_placeholder.error(f"Error generating image: {str(e)}")
         finally:
             st.session_state.generate_clicked = False
+
+def image_to_base64(image_path):
+    import base64
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode()
 
 if __name__ == "__main__":
     main() 
