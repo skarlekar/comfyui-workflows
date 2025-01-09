@@ -213,5 +213,6 @@
             }
         }
     ],
-    "Comfy.Keybinding.UnsetBindings": []
+    "Comfy.Keybinding.UnsetBindings": [],
+    "Comfy.UseNewMenu": "Top"
 }
