@@ -214,5 +214,6 @@
         }
     ],
     "Comfy.Keybinding.UnsetBindings": [],
-    "Comfy.UseNewMenu": "Top"
+    "Comfy.UseNewMenu": "Top",
+    "Comfy.LinkRenderMode": 2
 }
