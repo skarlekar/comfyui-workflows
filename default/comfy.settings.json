@@ -215,5 +215,7 @@
     ],
     "Comfy.Keybinding.UnsetBindings": [],
     "Comfy.UseNewMenu": "Top",
-    "Comfy.LinkRenderMode": 2
+    "Comfy.LinkRenderMode": 2,
+    "Crystools.ShowHdd": true,
+    "Comfy.ModelLibrary.AutoLoadAll": true
 }
